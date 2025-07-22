@@ -58,6 +58,7 @@ const Home = () => {
         className="mt-10 flex flex-wrap justify-center gap-4"
       >
         <button
+          onClick={() => navigate("/login")}
           className="bg-green-600 text-white px-5 py-2.5 sm:px-6 sm:py-3 rounded-md text-sm sm:text-base font-medium hover:bg-yellow-400 hover:text-black transition duration-300"
         >
           Get Started
