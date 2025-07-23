@@ -1,17 +1,15 @@
 import { Outlet } from "react-router-dom";
-import Header from "../Header/Header";
-import Footer from "../Footer/Footer";
+import UserFooter from "../Footer/UserFooter";
+import UserHeader from "../Header/UserHeader";
 
 export default function UserLayout() {
   return (
     <>
-      <Header />
+      <UserHeader />
       <main className="min-h-screen">
         <Outlet />
       </main>
-      <Footer />
+      <UserFooter/>
     </>
   );
 }
-
-
