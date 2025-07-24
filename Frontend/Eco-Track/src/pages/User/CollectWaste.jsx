@@ -8,7 +8,11 @@ import {
 import { Listbox, Transition } from "@headlessui/react";
 import { motion } from "framer-motion";
 import DatePicker from "react-datepicker";
+import Modal from "react-modal";
+import { FaCheckCircle, FaTimesCircle } from "react-icons/fa";
 import "react-datepicker/dist/react-datepicker.css";
+
+Modal.setAppElement("#root");
 
 const categoryData = {
   Biodegradable: [
@@ -44,16 +48,59 @@ const CollectWaste = () => {
   const fileInputRef = useRef(null);
   const datePickerRef = useRef(null);
 
+  const [wasteName, setWasteName] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [subCategory, setSubCategory] = useState("");
+  const [quantity, setQuantity] = useState("");
   const [selectedUnit, setSelectedUnit] = useState("");
+  const [description, setDescription] = useState("");
   const [imagePreview, setImagePreview] = useState(null);
   const [selectedDate, setSelectedDate] = useState(new Date());
 
+  const [modalIsOpen, setModalIsOpen] = useState(false);
+  const [modalStatus, setModalStatus] = useState(null); // 'success' | 'error'
+
   const handleImageClick = () => fileInputRef.current?.click();
+
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) setImagePreview(URL.createObjectURL(file));
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+
+    const isValid =
+      wasteName &&
+      selectedCategory &&
+      subCategory &&
+      quantity &&
+      selectedUnit &&
+      description &&
+      imagePreview &&
+      selectedDate;
+
+    if (!isValid) {
+      setModalStatus("error");
+    } else {
+      setModalStatus("success");
+
+      // Reset form
+      setWasteName("");
+      setSelectedCategory("");
+      setSubCategory("");
+      setQuantity("");
+      setSelectedUnit("");
+      setDescription("");
+      setImagePreview(null);
+      setSelectedDate(new Date());
+    }
+
+    setModalIsOpen(true);
+    setTimeout(() => {
+      setModalIsOpen(false);
+      setModalStatus(null);
+    }, 3000);
   };
 
   const inputStyle =
@@ -132,6 +179,7 @@ const CollectWaste = () => {
 
       <motion.form
         className="space-y-4"
+        onSubmit={handleSubmit}
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ duration: 0.6, delay: 0.3 }}
@@ -140,6 +188,8 @@ const CollectWaste = () => {
           <label className="block text-sm mb-1">Waste Name:</label>
           <input
             type="text"
+            value={wasteName}
+            onChange={(e) => setWasteName(e.target.value)}
             placeholder="Enter waste name"
             className={inputStyle}
           />
@@ -171,6 +221,8 @@ const CollectWaste = () => {
           <label className="block text-sm mb-1">Quantity:</label>
           <input
             type="number"
+            value={quantity}
+            onChange={(e) => setQuantity(e.target.value)}
             placeholder="Enter quantity"
             className={inputStyle}
           />
@@ -213,6 +265,8 @@ const CollectWaste = () => {
           <label className="block text-sm mb-1">Description:</label>
           <textarea
             placeholder="Enter description"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
             rows="3"
             className={inputStyle}
           />
@@ -254,6 +308,32 @@ const CollectWaste = () => {
           </button>
         </div>
       </motion.form>
+
+      {/* Modal */}
+      <Modal
+        isOpen={modalIsOpen}
+        onRequestClose={() => setModalIsOpen(false)}
+        contentLabel="Waste Collection Status"
+        className="bg-white w-80 max-w-md mx-auto p-6 rounded-lg shadow-lg outline-none flex flex-col items-center text-center"
+        overlayClassName="fixed inset-0 bg-black bg-opacity-30 flex justify-center items-center z-50"
+      >
+        <div className="text-6xl mb-4">
+          {modalStatus === "success" ? (
+            <FaCheckCircle className="text-green-600" />
+          ) : (
+            <FaTimesCircle className="text-red-600" />
+          )}
+        </div>
+        <h2
+          className={`text-lg font-semibold ${
+            modalStatus === "success" ? "text-green-600" : "text-red-600"
+          }`}
+        >
+          {modalStatus === "success"
+            ? "Waste collected successfully!"
+            : "Please fill in all required fields."}
+        </h2>
+      </Modal>
     </div>
   );
 };

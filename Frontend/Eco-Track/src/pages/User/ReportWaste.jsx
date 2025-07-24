@@ -11,7 +11,13 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import debounce from "lodash.debounce";
 import { fetchLocationSuggestions } from "../../api/Location";
+import Modal from "react-modal";
+import { FaCheckCircle, FaTimesCircle } from "react-icons/fa";
 
+// Set root for accessibility
+Modal.setAppElement("#root");
+
+// Category and subcategory data
 const categoryData = {
   Biodegradable: [
     "Food Waste",
@@ -44,6 +50,7 @@ const ReportWaste = () => {
   const fileInputRef = useRef(null);
   const datePickerRef = useRef(null);
 
+  // Form states
   const [wasteName, setWasteName] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [subCategory, setSubCategory] = useState("");
@@ -54,13 +61,20 @@ const ReportWaste = () => {
   const [description, setDescription] = useState("");
   const [imagePreview, setImagePreview] = useState(null);
 
+  // Modal states
+  const [modalIsOpen, setModalIsOpen] = useState(false);
+  const [modalStatus, setModalStatus] = useState(null); // 'success' | 'error'
+
+  // Debounce location fetch
   const debouncedLocationFetch = useMemo(() =>
     debounce(async (query) => {
       const results = await fetchLocationSuggestions(query);
       setLocationResults(results);
     }, 300), []);
 
+  // Handlers
   const handleImageClick = () => fileInputRef.current?.click();
+
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) setImagePreview(URL.createObjectURL(file));
@@ -69,7 +83,6 @@ const ReportWaste = () => {
   const handleLocationChange = async (e) => {
     const query = e.target.value;
     setLocationQuery(query);
-
     if (query.length > 2) {
       debouncedLocationFetch(query);
     } else {
@@ -84,36 +97,51 @@ const ReportWaste = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    const isValid =
+      wasteName &&
+      selectedCategory &&
+      subCategory &&
+      colorInput &&
+      locationQuery &&
+      selectedDate &&
+      description &&
+      imagePreview;
 
-    const reportData = {
-      name: wasteName,
-      category: selectedCategory,
-      subCategory,
-      color: colorInput,
-      location: locationQuery,
-      date: selectedDate,
-      description,
-      image: imagePreview,
-    };
+    if (isValid) {
+      setModalStatus("success");
+      // Reset form
+      setWasteName("");
+      setSelectedCategory("");
+      setSubCategory("");
+      setColorInput("");
+      setLocationQuery("");
+      setLocationResults([]);
+      setSelectedDate(new Date());
+      setDescription("");
+      setImagePreview(null);
+    } else {
+      setModalStatus("error");
+    }
 
-    console.log("Form submitted:", reportData);
+    setModalIsOpen(true);
+    setTimeout(() => {
+      setModalIsOpen(false);
+      setModalStatus(null);
+    }, 3000);
   };
 
+  // Styles
   const inputStyle =
     "w-full border border-gray-400 rounded px-3 py-2 text-sm text-black focus:border-green-600 focus:ring-1 focus:ring-green-600 focus:font-medium outline-none placeholder-black";
 
   const dropdownStyle =
     "relative w-full cursor-pointer rounded border border-gray-400 bg-white py-2 pl-3 pr-10 text-left text-sm text-black shadow-none focus:outline-none";
 
+  // Dropdown component
   const renderDropdown = (options, selected, setSelected, placeholder) => (
     <Listbox value={selected} onChange={setSelected}>
       <div className="relative">
-        <Listbox.Button
-          className={
-            dropdownStyle +
-            " focus:ring-1 focus:ring-green-600 focus:border-green-600 focus:font-medium"
-          }
-        >
+        <Listbox.Button className={`${dropdownStyle} focus:ring-1 focus:ring-green-600 focus:border-green-600 focus:font-medium`}>
           <span className="truncate">{selected || placeholder}</span>
           <span className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
             <ChevronDown className="h-4 w-4 text-gray-500" />
@@ -138,11 +166,7 @@ const ReportWaste = () => {
               >
                 {({ selected }) => (
                   <>
-                    <span
-                      className={`block truncate ${
-                        selected ? "font-medium text-black" : ""
-                      }`}
-                    >
+                    <span className={`block truncate ${selected ? "font-medium text-black" : ""}`}>
                       {item}
                     </span>
                     {selected && (
@@ -226,7 +250,6 @@ const ReportWaste = () => {
           <label className="block text-sm mb-1">Location:</label>
           <input
             type="text"
-            name="location"
             value={locationQuery}
             onChange={handleLocationChange}
             placeholder="Enter location"
@@ -318,6 +341,33 @@ const ReportWaste = () => {
           </button>
         </div>
       </motion.form>
+
+      {/* Modal */}
+      <Modal
+        isOpen={modalIsOpen}
+        onRequestClose={() => setModalIsOpen(false)}
+        contentLabel="Submission Modal"
+        className="bg-white w-80 max-w-md mx-auto p-6 rounded-lg shadow-lg outline-none flex flex-col items-center text-center"
+        overlayClassName="fixed inset-0 bg-black bg-opacity-30 flex justify-center items-center z-50"
+      >
+        <div className="text-5xl mb-4">
+          {modalStatus === "success" ? (
+            <FaCheckCircle className="text-green-600" />
+          ) : (
+            <FaTimesCircle className="text-red-600" />
+          )}
+        </div>
+
+        <h2
+          className={`text-lg font-semibold ${
+            modalStatus === "success" ? "text-green-600" : "text-red-600"
+          }`}
+        >
+          {modalStatus === "success"
+            ? "Waste reported successfully!"
+            : "Please fill in all required fields."}
+        </h2>
+      </Modal>
     </div>
   );
 };
