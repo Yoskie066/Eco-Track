@@ -1,4 +1,4 @@
-import React, { Fragment, useRef, useState, useMemo } from "react";
+import React, { Fragment, useRef, useState, useMemo , useEffect } from "react";
 import {
   Image as ImageIcon,
   ChevronDown,
@@ -46,7 +46,22 @@ const categoryData = {
   ],
 };
 
+
 const ReportWaste = () => {
+  // Load edit data if available
+  useEffect(() => {
+  const editItem = JSON.parse(localStorage.getItem("editReportedWaste"));
+  if (editItem) {
+    setWasteName(editItem.wasteName);
+    setSelectedDate(new Date(editItem.dateReported));
+    setLocationQuery(editItem.locationQuery); 
+    setDescription(editItem.description);
+    setImagePreview(editItem.imageUrl);
+    setEditId(editItem.id);
+    localStorage.removeItem("editReportedWaste");
+  }
+}, []);
+
   const fileInputRef = useRef(null);
   const datePickerRef = useRef(null);
 
@@ -63,7 +78,10 @@ const ReportWaste = () => {
 
   // Modal states
   const [modalIsOpen, setModalIsOpen] = useState(false);
-  const [modalStatus, setModalStatus] = useState(null); // 'success' | 'error'
+  const [modalStatus, setModalStatus] = useState(null); 
+
+  // Edit state
+  const [editId, setEditId] = useState(null);
 
   // Debounce location fetch
   const debouncedLocationFetch = useMemo(() =>
@@ -76,9 +94,15 @@ const ReportWaste = () => {
   const handleImageClick = () => fileInputRef.current?.click();
 
   const handleImageChange = (e) => {
-    const file = e.target.files[0];
-    if (file) setImagePreview(URL.createObjectURL(file));
-  };
+  const file = e.target.files[0];
+  if (file) {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setImagePreview(reader.result); 
+    };
+    reader.readAsDataURL(file);
+  }
+};
 
   const handleLocationChange = async (e) => {
     const query = e.target.value;
@@ -107,26 +131,47 @@ const ReportWaste = () => {
       description &&
       imagePreview;
 
-    if (isValid) {
-      setModalStatus("success");
-      // Reset form
-      setWasteName("");
-      setSelectedCategory("");
-      setSubCategory("");
-      setColorInput("");
-      setLocationQuery("");
-      setLocationResults([]);
-      setSelectedDate(new Date());
-      setDescription("");
-      setImagePreview(null);
+    if (!isValid) {
+    setModalStatus("error");
+  } else {
+    const newEntry = {
+      id: editId || Date.now(),
+      wasteName,
+      dateReported: selectedDate.toISOString().split("T")[0],
+      location: locationQuery,
+      description,
+      imageUrl: imagePreview,
+    };
+
+    let existingData = JSON.parse(localStorage.getItem("reportedWaste")) || [];
+
+    if (editId) {
+      existingData = existingData.map((item) =>
+        item.id === editId ? newEntry : item
+      );
     } else {
-      setModalStatus("error");
+      existingData.push(newEntry);
     }
+
+    localStorage.setItem("reportedWaste", JSON.stringify(existingData));
+    setModalStatus("success");
+
+    // Reset form
+    setWasteName("");
+    setSelectedCategory("");
+    setSubCategory("");
+    setColorInput("");
+    setLocationQuery("");
+    setSelectedDate(new Date());
+    setDescription("");
+    setImagePreview(null);
+  }
 
     setModalIsOpen(true);
     setTimeout(() => {
       setModalIsOpen(false);
       setModalStatus(null);
+      window.location.href = "/waste-timeline";
     }, 3000);
   };
 

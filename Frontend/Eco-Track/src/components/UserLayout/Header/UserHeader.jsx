@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import {
   Menu,
   X,
@@ -7,7 +8,7 @@ import {
   LayoutDashboard,
   Recycle,
   AlertCircle,
-  UserCircle,
+  Trash2 ,
 } from "lucide-react";
 
 export default function UserHeader() {
@@ -16,6 +17,9 @@ export default function UserHeader() {
   // Simulated logged-in user email (replace with actual user data)
   const userEmail = "User1@gmail.com";
   const userInitial = userEmail.charAt(0).toUpperCase();
+
+  // Navigate function for logout
+  const navigate = useNavigate();
 
   return (
     <header className="sticky top-0 bg-green-600 text-white px-6 py-3 flex justify-between items-center shadow-md z-50">
@@ -51,11 +55,13 @@ export default function UserHeader() {
           <AlertCircle className="w-4 h-4" />
           Report Waste
         </Link>
-        <Link to="/user-profile" className="flex items-center gap-1 hover:text-yellow-400 transition duration-200">
-          <UserCircle className="w-4 h-4" />
-          User Profile
+        <Link to="/waste-timeline" className="flex items-center gap-1 hover:text-yellow-400 transition duration-200">
+          <Trash2 className="w-4 h-4" />
+          Waste Timeline
         </Link>
-        <button className="flex items-center gap-1 hover:text-yellow-400 transition duration-200">
+        <button onClick={() => navigate("/login")}
+        className="flex items-center gap-1 hover:text-yellow-400 transition duration-200"
+        >
           <LogOut className="w-4 h-4" />
           Logout
         </button>
@@ -88,16 +94,15 @@ export default function UserHeader() {
             <AlertCircle className="w-5 h-5" />
             Report Waste
           </Link>
-          <Link to="/user-profile" onClick={() => setIsOpen(false)} className="mb-4 hover:text-yellow-400 flex items-center gap-2">
-            <UserCircle className="w-5 h-5" />
-            User Profile
+          <Link to="/waste-timeline" onClick={() => setIsOpen(false)} className="mb-4 hover:text-yellow-400 flex items-center gap-2">
+            <Trash2 className="w-5 h-5" />
+            Waste Timeline
           </Link>
-          <button
-            onClick={() => {
-              setIsOpen(false);
-              // Add logout logic
-            }}
-            className="flex items-center gap-2 hover:text-yellow-400"
+          <button onClick={() => {
+            setIsOpen(false);
+            navigate("/login");
+          }}
+          className="flex items-center gap-2 hover:text-yellow-400"
           >
             <LogOut className="w-5 h-5" />
             Logout

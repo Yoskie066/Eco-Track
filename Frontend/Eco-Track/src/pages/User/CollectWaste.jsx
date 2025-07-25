@@ -1,4 +1,4 @@
-import React, { Fragment, useRef, useState } from "react";
+import React, { Fragment, useRef, useState, useEffect } from "react";
 import {
   Image as ImageIcon,
   ChevronDown,
@@ -45,6 +45,18 @@ const categoryData = {
 const unitOptions = ["kg", "g", "ton", "bags", "pcs", "L", "m³"];
 
 const CollectWaste = () => {
+  useEffect(() => {
+  const editItem = JSON.parse(localStorage.getItem("editWaste"));
+  if (editItem) {
+    setWasteName(editItem.wasteName);
+    setSelectedDate(new Date(editItem.dateCollected));
+    setDescription(editItem.description);
+    setImagePreview(editItem.imageUrl);
+    setEditId(editItem.id);
+    localStorage.removeItem("editWaste");
+  }
+}, []);
+
   const fileInputRef = useRef(null);
   const datePickerRef = useRef(null);
 
@@ -58,13 +70,21 @@ const CollectWaste = () => {
   const [selectedDate, setSelectedDate] = useState(new Date());
 
   const [modalIsOpen, setModalIsOpen] = useState(false);
-  const [modalStatus, setModalStatus] = useState(null); // 'success' | 'error'
+  const [modalStatus, setModalStatus] = useState(null);
+
+  const [editId, setEditId] = useState(null);
 
   const handleImageClick = () => fileInputRef.current?.click();
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
-    if (file) setImagePreview(URL.createObjectURL(file));
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+      setImagePreview(reader.result); 
+    }
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleSubmit = (e) => {
@@ -81,25 +101,45 @@ const CollectWaste = () => {
       selectedDate;
 
     if (!isValid) {
-      setModalStatus("error");
-    } else {
-      setModalStatus("success");
+    setModalStatus("error");
+  } else {
+    const newEntry = {
+      id: editId || Date.now(),
+      wasteName,
+      dateCollected: selectedDate.toISOString().split("T")[0],
+      description,
+      imageUrl: imagePreview,
+    };
 
-      // Reset form
-      setWasteName("");
-      setSelectedCategory("");
-      setSubCategory("");
-      setQuantity("");
-      setSelectedUnit("");
-      setDescription("");
-      setImagePreview(null);
-      setSelectedDate(new Date());
+    let existingData = JSON.parse(localStorage.getItem("collectedWaste")) || [];
+
+    if (editId) {
+      existingData = existingData.map((item) =>
+        item.id === editId ? newEntry : item
+      );
+    } else {
+      existingData.push(newEntry);
     }
+
+    localStorage.setItem("collectedWaste", JSON.stringify(existingData));
+    setModalStatus("success");
+
+    // Reset form
+    setWasteName("");
+    setSelectedCategory("");
+    setSubCategory("");
+    setQuantity("");
+    setSelectedUnit("");
+    setDescription("");
+    setImagePreview(null);
+    setSelectedDate(new Date());
+  }
 
     setModalIsOpen(true);
     setTimeout(() => {
       setModalIsOpen(false);
       setModalStatus(null);
+      window.location.href = "/waste-timeline";
     }, 3000);
   };
 
