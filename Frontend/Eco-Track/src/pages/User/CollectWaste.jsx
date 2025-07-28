@@ -103,25 +103,32 @@ const CollectWaste = () => {
     if (!isValid) {
     setModalStatus("error");
   } else {
+    // Get current user email
+    const userEmail = localStorage.getItem("ecoTrackCurrentUserEmail");
     const newEntry = {
       id: editId || Date.now(),
+      userEmail,
       wasteName,
       dateCollected: selectedDate.toISOString().split("T")[0],
       description,
       imageUrl: imagePreview,
     };
-
-    let existingData = JSON.parse(localStorage.getItem("collectedWaste")) || [];
+    
+    // Get existing data for this user
+    const userKey = `collectedWaste_${userEmail}`;
+    let existingData = JSON.parse(localStorage.getItem(userKey)) || [];
 
     if (editId) {
+      // Update existing entry
       existingData = existingData.map((item) =>
         item.id === editId ? newEntry : item
       );
     } else {
+      // Add new entry
       existingData.push(newEntry);
     }
 
-    localStorage.setItem("collectedWaste", JSON.stringify(existingData));
+    localStorage.setItem(userKey, JSON.stringify(existingData));
     setModalStatus("success");
 
     // Reset form

@@ -2,10 +2,18 @@ import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import UserAuth from "../../../../assets/UserAuth.png";
+import { FaArrowLeft } from "react-icons/fa";
+import Modal from "react-modal";
+import { FaCheckCircle, FaTimesCircle } from "react-icons/fa";
+
+// Set root for accessibility
+Modal.setAppElement("#root");
 
 const UserLogin = () => {
   const [formData, setFormData] = useState({ email: "", password: "" });
   const navigate = useNavigate();
+  const [modalIsOpen, setModalIsOpen] = useState(false);
+  const [modalStatus, setModalStatus] = useState(null);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -15,25 +23,40 @@ const UserLogin = () => {
     e.preventDefault();
 
     const users = JSON.parse(localStorage.getItem("ecoTrackUsers")) || [];
-
     const user = users.find(
       (u) => u.email === formData.email && u.password === formData.password
     );
 
     if (user) {
-      alert("Login successful!");
-      // Optionally: localStorage.setItem("ecoTrackCurrentUser", JSON.stringify(user));
-      navigate("/dashboard");
+      setModalStatus("success");
+      // Store user email in localStorage
+      localStorage.setItem("ecoTrackCurrentUserEmail", user.email);
+      localStorage.setItem("ecoTrackCurrentUser", JSON.stringify(user));
     } else {
-      alert("Invalid email or password.");
+      setModalStatus("error");
     }
+
+    setModalIsOpen(true);
+    setTimeout(() => {
+      setModalIsOpen(false);
+      if (user) {
+        navigate("/dashboard");
+      }
+    }, 3000);
   };
 
   const handleGoToRegister = () => navigate("/register");
   const handleGoToForgotPassword = () => navigate("/forgot-password");
+  const handleGoBack = () => navigate("/home");
 
   return (
     <div className="py-20 px-6 max-w-6xl mx-auto bg-white text-black">
+      {/* Back button */}
+      <div className="flex items-center mb-4 cursor-pointer" onClick={handleGoBack}>
+        <FaArrowLeft className="text-green-600 mr-2" />
+        <span className="text-green-600 font-medium">Back to Homepage</span>
+      </div>
+
       <motion.h2
         className="text-4xl font-bold text-center mb-4 text-green-600"
         initial={{ y: 50, opacity: 0 }}
@@ -49,7 +72,7 @@ const UserLogin = () => {
         animate={{ y: 0, opacity: 1 }}
         transition={{ delay: 0.3, duration: 0.6 }}
       >
-        Kindly provide your login details to continue using EcoTrack’s services.
+        Kindly provide your login details to continue using EcoTrack's services.
       </motion.p>
 
       <div className="flex flex-col md:flex-row justify-between items-center gap-12">
@@ -112,7 +135,7 @@ const UserLogin = () => {
               </button>
 
               <div className="text-sm text-center text-black mt-4 font-normal">
-                Don’t have an account?
+                Don't have an account?
                 <div className="mt-2">
                   <button
                     type="button"
@@ -127,14 +150,35 @@ const UserLogin = () => {
           </div>
         </motion.div>
       </div>
+
+      {/* Modal */}
+      <Modal
+        isOpen={modalIsOpen}
+        onRequestClose={() => setModalIsOpen(false)}
+        contentLabel="Login Status Modal"
+        className="bg-white w-80 max-w-md mx-auto p-6 rounded-lg shadow-lg outline-none flex flex-col items-center text-center"
+        overlayClassName="fixed inset-0 bg-black bg-opacity-30 flex justify-center items-center z-50"
+      >
+        <div className="text-5xl mb-4">
+          {modalStatus === "success" ? (
+            <FaCheckCircle className="text-green-600" />
+          ) : (
+            <FaTimesCircle className="text-red-600" />
+          )}
+        </div>
+
+        <h2
+          className={`text-lg font-semibold ${
+            modalStatus === "success" ? "text-green-600" : "text-red-600"
+          }`}
+        >
+          {modalStatus === "success"
+            ? "Login successful!"
+            : "Invalid email or password."}
+        </h2>
+      </Modal>
     </div>
   );
 };
 
 export default UserLogin;
-
-
-
-
-
-

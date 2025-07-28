@@ -7,20 +7,29 @@ const CollectWasteTimeline = () => {
   const [dropdownOpenId, setDropdownOpenId] = useState(null);
   const navigate = useNavigate();
 
+  // Load reported waste of the currently logged-in user
   useEffect(() => {
-    const storedData = JSON.parse(localStorage.getItem("collectedWaste")) || [];
-    setCollectedWaste(storedData.reverse());
-  }, []);
+    const userEmail = localStorage.getItem("ecoTrackCurrentUserEmail");
+    if (!userEmail) return;
 
-  const handleDelete = (id) => {
-    const updated = collectedWaste.filter((item) => item.id !== id);
-    localStorage.setItem("collectedWaste", JSON.stringify([...updated].reverse()));
-    setCollectedWaste(updated);
-  };
+    const userKey = `collectedWaste_${userEmail}`;
+    const stored = JSON.parse(localStorage.getItem(userKey)) || [];
+    setCollectedWaste(stored.reverse());
+  }, []);
 
   const handleEdit = (item) => {
     localStorage.setItem("editWaste", JSON.stringify(item));
     navigate("/collect-waste");
+  };
+
+  const handleDelete = (id) => {
+    const userEmail = localStorage.getItem("ecoTrackCurrentUserEmail");
+    if (!userEmail) return;
+
+    const userKey = `collectedWaste_${userEmail}`;
+    const updated = collectedWaste.filter((item) => item.id !== id);
+    localStorage.setItem(userKey, JSON.stringify([...updated].reverse()));
+    setCollectedWaste(updated);
   };
 
   return (

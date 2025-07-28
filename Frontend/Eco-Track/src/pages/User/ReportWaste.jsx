@@ -46,7 +46,6 @@ const categoryData = {
   ],
 };
 
-
 const ReportWaste = () => {
   // Load edit data if available
   useEffect(() => {
@@ -121,6 +120,7 @@ const ReportWaste = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+
     const isValid =
       wasteName &&
       selectedCategory &&
@@ -134,8 +134,11 @@ const ReportWaste = () => {
     if (!isValid) {
     setModalStatus("error");
   } else {
+    // Get current user email
+    const userEmail = localStorage.getItem("ecoTrackCurrentUserEmail");
     const newEntry = {
       id: editId || Date.now(),
+      userEmail,
       wasteName,
       dateReported: selectedDate.toISOString().split("T")[0],
       location: locationQuery,
@@ -143,7 +146,9 @@ const ReportWaste = () => {
       imageUrl: imagePreview,
     };
 
-    let existingData = JSON.parse(localStorage.getItem("reportedWaste")) || [];
+    // Get existing data for this user
+    const userKey = `reportedWaste_${userEmail}`;
+    let existingData = JSON.parse(localStorage.getItem(userKey)) || [];
 
     if (editId) {
       existingData = existingData.map((item) =>
@@ -153,7 +158,8 @@ const ReportWaste = () => {
       existingData.push(newEntry);
     }
 
-    localStorage.setItem("reportedWaste", JSON.stringify(existingData));
+    // Save to user-specific key
+    localStorage.setItem(userKey, JSON.stringify(existingData));
     setModalStatus("success");
 
     // Reset form

@@ -2,10 +2,19 @@ import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import UserAuth from "../../../../assets/UserAuth.png";
+import { FaArrowLeft } from "react-icons/fa";
+import Modal from "react-modal";
+import { FaCheckCircle, FaTimesCircle } from "react-icons/fa";
+
+// Set root for accessibility
+Modal.setAppElement("#root");
 
 const UserForgotPassword = () => {
   const [formData, setFormData] = useState({ email: "", newpassword: "" });
   const navigate = useNavigate();
+  const [modalIsOpen, setModalIsOpen] = useState(false);
+  const [modalStatus, setModalStatus] = useState(null);
+  const [modalMessage, setModalMessage] = useState("");
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -20,17 +29,32 @@ const UserForgotPassword = () => {
     if (userIndex !== -1) {
       users[userIndex].password = formData.newpassword;
       localStorage.setItem("ecoTrackUsers", JSON.stringify(users));
-      alert("Password reset successful! Please log in.");
-      navigate("/login");
+      
+      setModalStatus("success");
+      setModalMessage("Password reset successful! Please log in.");
+      setModalIsOpen(true);
+      
+      setTimeout(() => {
+        navigate("/login");
+      }, 3000);
     } else {
-      alert("Email not found. Please register first.");
+      setModalStatus("error");
+      setModalMessage("Email not found. Please register first.");
+      setModalIsOpen(true);
     }
   };
 
   const handleGoToLogin = () => navigate("/login");
+  const handleGoBack = () => navigate("/home");
 
   return (
     <div className="py-20 px-6 max-w-6xl mx-auto bg-white text-black">
+      {/* Back button */}
+      <div className="flex items-center mb-6 cursor-pointer" onClick={handleGoBack}>
+        <FaArrowLeft className="text-green-600 mr-2" />
+        <span className="text-green-600 font-medium">Back to Homepage</span>
+      </div>
+
       <motion.h2
         className="text-4xl font-bold text-center mb-4 text-green-600"
         initial={{ y: 50, opacity: 0 }}
@@ -46,7 +70,7 @@ const UserForgotPassword = () => {
         animate={{ y: 0, opacity: 1 }}
         transition={{ delay: 0.3, duration: 0.6 }}
       >
-        If you’ve forgotten your password, kindly proceed with the reset process below.
+        If you've forgotten your password, kindly proceed with the reset process below.
       </motion.p>
 
       <div className="flex flex-col md:flex-row justify-between items-center gap-12">
@@ -60,12 +84,12 @@ const UserForgotPassword = () => {
         />
 
         <motion.div
-          className="w-full md:w-1/2 max-w-sm md:max-w-md object-contain"
+          className="w-full md:w-1/2 p-1"
           initial={{ x: -100, opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
           transition={{ delay: 0.6, duration: 0.8 }}
         >
-          <div className="bg-white rounded-xl p-6 border-2 font-bold">
+          <div className="bg-white rounded-xl p-6 border-2 font-bold w-full max-w-sm mx-auto">
             <form onSubmit={handleSubmit} className="space-y-4">
               <h2 className="text-3xl font-bold text-green-600 text-center">Forgot Password</h2>
 
@@ -118,6 +142,31 @@ const UserForgotPassword = () => {
           </div>
         </motion.div>
       </div>
+
+      {/* Modal */}
+      <Modal
+        isOpen={modalIsOpen}
+        onRequestClose={() => setModalIsOpen(false)}
+        contentLabel="Password Reset Status Modal"
+        className="bg-white w-80 max-w-md mx-auto p-6 rounded-lg shadow-lg outline-none flex flex-col items-center text-center"
+        overlayClassName="fixed inset-0 bg-black bg-opacity-30 flex justify-center items-center z-50"
+      >
+        <div className="text-5xl mb-4">
+          {modalStatus === "success" ? (
+            <FaCheckCircle className="text-green-600" />
+          ) : (
+            <FaTimesCircle className="text-red-600" />
+          )}
+        </div>
+
+        <h2
+          className={`text-lg font-semibold ${
+            modalStatus === "success" ? "text-green-600" : "text-red-600"
+          }`}
+        >
+          {modalMessage}
+        </h2>
+      </Modal>
     </div>
   );
 };

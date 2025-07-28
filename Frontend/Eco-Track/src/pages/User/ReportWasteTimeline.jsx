@@ -7,8 +7,13 @@ const ReportedWasteTimeline = () => {
   const [dropdownOpenId, setDropdownOpenId] = useState(null);
   const navigate = useNavigate();
 
+  // Load reported waste of the currently logged-in user
   useEffect(() => {
-    const stored = JSON.parse(localStorage.getItem("reportedWaste")) || [];
+    const userEmail = localStorage.getItem("ecoTrackCurrentUserEmail");
+    if (!userEmail) return;
+
+    const userKey = `reportedWaste_${userEmail}`;
+    const stored = JSON.parse(localStorage.getItem(userKey)) || [];
     setReportedWaste(stored.reverse());
   }, []);
 
@@ -18,8 +23,12 @@ const ReportedWasteTimeline = () => {
   };
 
   const handleDelete = (id) => {
+    const userEmail = localStorage.getItem("ecoTrackCurrentUserEmail");
+    if (!userEmail) return;
+
+    const userKey = `reportedWaste_${userEmail}`;
     const updated = reportedWaste.filter((item) => item.id !== id);
-    localStorage.setItem("reportedWaste", JSON.stringify([...updated].reverse()));
+    localStorage.setItem(userKey, JSON.stringify([...updated].reverse()));
     setReportedWaste(updated);
   };
 
