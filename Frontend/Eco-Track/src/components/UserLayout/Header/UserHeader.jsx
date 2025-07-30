@@ -13,9 +13,18 @@ import {
 
 export default function UserHeader() {
   const [isOpen, setIsOpen] = useState(false);
-  const userEmail = localStorage.getItem("ecoTrackCurrentUserEmail") || "Guest";
+  const userData = JSON.parse(localStorage.getItem("ecoTrackCurrentUser"));;
+  const userEmail = userData.email;
   const userInitial = userEmail.charAt(0).toUpperCase();
   const navigate = useNavigate();
+
+  const handleLogout = () => {
+    // Remove user data from localStorage
+    localStorage.removeItem("ecoTrackCurrentUser");
+    localStorage.removeItem("ecoTrackCurrentUserEmail");
+    // Navigate to login
+    navigate("/login");
+  };
 
   return (
     <header className="sticky top-0 bg-green-600 text-white px-6 py-3 flex justify-between items-center shadow-md z-50">
@@ -56,7 +65,7 @@ export default function UserHeader() {
           Waste Timeline
         </Link>
         <button 
-          onClick={() => navigate("/login")}
+          onClick={handleLogout}
           className="flex items-center gap-1 hover:text-yellow-400 transition duration-200"
         >
           <LogOut className="w-4 h-4" />
@@ -127,7 +136,7 @@ export default function UserHeader() {
           <button 
             onClick={() => {
               setIsOpen(false);
-              navigate("/login");
+              handleLogout();
             }}
             className="py-3 px-4 hover:bg-green-700 rounded flex items-center gap-3 text-left"
           >

@@ -46,16 +46,20 @@ const unitOptions = ["kg", "g", "ton", "bags", "pcs", "L", "m³"];
 
 const CollectWaste = () => {
   useEffect(() => {
-  const editItem = JSON.parse(localStorage.getItem("editWaste"));
-  if (editItem) {
-    setWasteName(editItem.wasteName);
-    setSelectedDate(new Date(editItem.dateCollected));
-    setDescription(editItem.description);
-    setImagePreview(editItem.imageUrl);
-    setEditId(editItem.id);
-    localStorage.removeItem("editWaste");
-  }
-}, []);
+    const editItem = JSON.parse(localStorage.getItem("editWaste"));
+    if (editItem) {
+      setWasteName(editItem.wasteName);
+      setSelectedCategory(editItem.selectedCategory);
+      setSubCategory(editItem.subCategory);
+      setQuantity(editItem.quantity);
+      setSelectedUnit(editItem.selectedUnit);
+      setSelectedDate(new Date(editItem.dateCollected));
+      setDescription(editItem.description);
+      setImagePreview(editItem.imageUrl);
+      setEditId(editItem.id);
+      localStorage.removeItem("editWaste");
+    }
+  }, []);
 
   const fileInputRef = useRef(null);
   const datePickerRef = useRef(null);
@@ -68,6 +72,7 @@ const CollectWaste = () => {
   const [description, setDescription] = useState("");
   const [imagePreview, setImagePreview] = useState(null);
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const [isUploading, setIsUploading] = useState(false); // Added this state
 
   const [modalIsOpen, setModalIsOpen] = useState(false);
   const [modalStatus, setModalStatus] = useState(null);
@@ -76,14 +81,50 @@ const CollectWaste = () => {
 
   const handleImageClick = () => fileInputRef.current?.click();
 
-  const handleImageChange = (e) => {
+  const uploadToCloudinary = async (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET);
+
+    try {
+      const response = await fetch(
+         `https://api.cloudinary.com/v1_1/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}/image/upload`,
+        {
+          method: 'POST',
+          body: formData,
+        }
+      );
+      const data = await response.json();
+      return data.secure_url;
+    } catch (error) {
+      console.error('Upload failed:', error);
+      return null;
+    }
+  };
+
+  const handleImageChange = async (e) => {
     const file = e.target.files[0];
-    if (file) {
+    if (!file) return;
+
+    setIsUploading(true);
+    
+    try {
+      // First show local preview
       const reader = new FileReader();
       reader.onloadend = () => {
-      setImagePreview(reader.result); 
-    }
+        setImagePreview(reader.result);
+      };
       reader.readAsDataURL(file);
+
+      // Upload to Cloudinary
+      const cloudinaryUrl = await uploadToCloudinary(file);
+      if (cloudinaryUrl) {
+        setImagePreview(cloudinaryUrl);
+      }
+    } catch (error) {
+      console.error("Upload error:", error);
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -101,52 +142,59 @@ const CollectWaste = () => {
       selectedDate;
 
     if (!isValid) {
-    setModalStatus("error");
-  } else {
-    // Get current user email
-    const userEmail = localStorage.getItem("ecoTrackCurrentUserEmail");
-    const newEntry = {
-      id: editId || Date.now(),
-      userEmail,
-      wasteName,
-      dateCollected: selectedDate.toISOString().split("T")[0],
-      description,
-      imageUrl: imagePreview,
-    };
-    
-    // Get existing data for this user
-    const userKey = `collectedWaste_${userEmail}`;
-    let existingData = JSON.parse(localStorage.getItem(userKey)) || [];
-
-    if (editId) {
-      // Update existing entry
-      existingData = existingData.map((item) =>
-        item.id === editId ? newEntry : item
-      );
+      setModalStatus("error");
     } else {
-      // Add new entry
-      existingData.push(newEntry);
+      // Get current user email
+      const userEmail = localStorage.getItem("ecoTrackCurrentUserEmail");
+      const newEntry = {
+        id: editId || Date.now(),
+        userEmail,
+        wasteName,
+        selectedCategory,
+        subCategory,
+        quantity: parseFloat(quantity),
+        selectedUnit,
+        dateCollected: selectedDate.toISOString().split("T")[0],
+        description,
+        imageUrl: imagePreview,
+      };
+
+      // Get existing data for this user
+      const userKey = `collectedWaste_${userEmail}`;
+      let existingData = JSON.parse(localStorage.getItem(userKey)) || [];
+
+      if (editId) {
+        // Update existing entry
+        existingData = existingData.map((item) =>
+          item.id === editId ? newEntry : item
+        );
+      } else {
+        // Add new entry
+        existingData.push(newEntry);
+      }
+
+      localStorage.setItem(userKey, JSON.stringify(existingData));
+      setModalStatus("success");
+
+      // Reset form
+      setWasteName("");
+      setSelectedCategory("");
+      setSubCategory("");
+      setQuantity("");
+      setSelectedUnit("");
+      setDescription("");
+      setImagePreview(null);
+      setSelectedDate(new Date());
+      setEditId(null);
     }
-
-    localStorage.setItem(userKey, JSON.stringify(existingData));
-    setModalStatus("success");
-
-    // Reset form
-    setWasteName("");
-    setSelectedCategory("");
-    setSubCategory("");
-    setQuantity("");
-    setSelectedUnit("");
-    setDescription("");
-    setImagePreview(null);
-    setSelectedDate(new Date());
-  }
 
     setModalIsOpen(true);
     setTimeout(() => {
       setModalIsOpen(false);
       setModalStatus(null);
-      window.location.href = "/waste-timeline";
+      if (modalStatus === "success") {
+        window.location.href = "/waste-timeline";
+      }
     }, 3000);
   };
 
@@ -272,6 +320,8 @@ const CollectWaste = () => {
             onChange={(e) => setQuantity(e.target.value)}
             placeholder="Enter quantity"
             className={inputStyle}
+            min="0"
+            step="0.01"
           />
         </div>
 
@@ -351,7 +401,7 @@ const CollectWaste = () => {
             type="submit"
             className="px-4 py-2 bg-green-600 text-white rounded hover:bg-yellow-400 hover:text-black transition-colors duration-300"
           >
-            Collect
+            {editId ? "Update Waste" : "Collect Waste"}
           </button>
         </div>
       </motion.form>
@@ -377,7 +427,9 @@ const CollectWaste = () => {
           }`}
         >
           {modalStatus === "success"
-            ? "Waste collected successfully!"
+            ? editId
+              ? "Waste updated successfully!"
+              : "Waste collected successfully!"
             : "Please fill in all required fields."}
         </h2>
       </Modal>

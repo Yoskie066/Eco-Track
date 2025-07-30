@@ -27,6 +27,11 @@ const UserRegister = () => {
   const handleGoToLogin = () => navigate("/login");
   const handleGoBack = () => navigate("/home");
 
+  // Function to generate random 10-digit ID
+  const generateRandomId = () => {
+    return Math.floor(1000000000 + Math.random() * 9000000000).toString();
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
     const { email, password, confirmPassword } = formData;
@@ -48,7 +53,28 @@ const UserRegister = () => {
       return;
     }
 
-    const updatedUsers = [...existingUsers, { email, password }];
+    // Get current date and format it
+    const currentDate = new Date();
+    const formattedDate = currentDate.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+
+    // Generate random 10-digit ID for the new user
+    const userId = generateRandomId();
+
+    // Add new user with registration date
+    const newUser = {
+      id: userId, 
+      email, 
+      password,
+      dateRegistered: formattedDate 
+    };
+
+    const updatedUsers = [...existingUsers, newUser];
     localStorage.setItem("ecoTrackUsers", JSON.stringify(updatedUsers));
 
     setModalStatus("success");

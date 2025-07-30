@@ -2,10 +2,18 @@ import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import UserAuth from "../../../../assets/UserAuth.png";
+import { FaArrowLeft } from "react-icons/fa";
+import Modal from "react-modal";
+import { FaCheckCircle, FaTimesCircle } from "react-icons/fa";
+
+// Set root for accessibility
+Modal.setAppElement("#root");
 
 const AdminLogin = () => {
   const [formData, setFormData] = useState({ email: "", password: "" });
   const navigate = useNavigate();
+  const [modalIsOpen, setModalIsOpen] = useState(false);
+  const [modalStatus, setModalStatus] = useState(null);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -15,24 +23,40 @@ const AdminLogin = () => {
     e.preventDefault();
 
     const admins = JSON.parse(localStorage.getItem("ecoTrackAdmins")) || [];
-
     const admin = admins.find(
       (a) => a.email === formData.email && a.password === formData.password
     );
 
     if (admin) {
-      alert("Admin login successful!");
-      navigate("/admin-dashboard");
+      setModalStatus("success");
+      // Store admin email in localStorage
+      localStorage.setItem("ecoTrackCurrentAdminEmail", admin.email);
+      localStorage.setItem("ecoTrackCurrentAdmin", JSON.stringify(admin));
     } else {
-      alert("Invalid admin email or password.");
+      setModalStatus("error");
     }
+
+    setModalIsOpen(true);
+    setTimeout(() => {
+      setModalIsOpen(false);
+      if (admin) {
+        navigate("/analytics"); 
+      }
+    }, 3000);
   };
 
   const handleGoToRegister = () => navigate("/admin-register");
   const handleGoToForgotPassword = () => navigate("/admin-forgot-password");
+  const handleGoBack = () => navigate("/home");
 
   return (
     <div className="py-20 px-6 max-w-6xl mx-auto bg-white text-black">
+      {/* Back button */}
+      <div className="flex items-center mb-4 cursor-pointer" onClick={handleGoBack}>
+        <FaArrowLeft className="text-green-600 mr-2" />
+        <span className="text-green-600 font-medium">Back to Homepage</span>
+      </div>
+
       <motion.h2
         className="text-4xl font-bold text-center mb-4 text-green-600"
         initial={{ y: 50, opacity: 0 }}
@@ -69,7 +93,7 @@ const AdminLogin = () => {
         >
           <div className="bg-white rounded-xl p-6 border-2 font-bold w-full max-w-sm mx-auto">
             <form onSubmit={handleSubmit} className="space-y-4">
-              <h2 className="text-3xl font-bold text-green-600 text-center">Admin Login</h2>
+              <h2 className="text-3xl font-bold text-green-600 text-center">Login</h2>
 
               <div>
                 <label htmlFor="email" className="block mb-1 font-medium text-sm">Email:</label>
@@ -107,7 +131,7 @@ const AdminLogin = () => {
                 type="submit"
                 className="w-full bg-green-600 text-white py-2 rounded-md hover:bg-yellow-400 hover:text-black transition duration-300 text-base font-medium"
               >
-                LOGIN AS ADMIN
+                LOGIN
               </button>
 
               <div className="text-sm text-center text-black mt-4 font-normal">
@@ -118,7 +142,7 @@ const AdminLogin = () => {
                     onClick={handleGoToRegister}
                     className="w-full bg-green-600 text-white py-2 rounded-md hover:bg-yellow-400 hover:text-black transition duration-300 text-base font-medium"
                   >
-                    REGISTER AS ADMIN
+                    REGISTER
                   </button>
                 </div>
               </div>
@@ -126,6 +150,33 @@ const AdminLogin = () => {
           </div>
         </motion.div>
       </div>
+
+      {/* Modal */}
+      <Modal
+        isOpen={modalIsOpen}
+        onRequestClose={() => setModalIsOpen(false)}
+        contentLabel="Login Status Modal"
+        className="bg-white w-80 max-w-md mx-auto p-6 rounded-lg shadow-lg outline-none flex flex-col items-center text-center"
+        overlayClassName="fixed inset-0 bg-black bg-opacity-30 flex justify-center items-center z-50"
+      >
+        <div className="text-5xl mb-4">
+          {modalStatus === "success" ? (
+            <FaCheckCircle className="text-green-600" />
+          ) : (
+            <FaTimesCircle className="text-red-600" />
+          )}
+        </div>
+
+        <h2
+          className={`text-lg font-semibold ${
+            modalStatus === "success" ? "text-green-600" : "text-red-600"
+          }`}
+        >
+          {modalStatus === "success"
+            ? "Admin login successful!"
+            : "Invalid admin credentials."}
+        </h2>
+      </Modal>
     </div>
   );
 };

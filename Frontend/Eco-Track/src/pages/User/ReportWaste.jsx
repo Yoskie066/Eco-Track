@@ -1,4 +1,4 @@
-import React, { Fragment, useRef, useState, useMemo , useEffect } from "react";
+import React, { Fragment, useRef, useState, useEffect, useMemo } from "react";
 import {
   Image as ImageIcon,
   ChevronDown,
@@ -8,16 +8,14 @@ import {
 import { Listbox, Transition } from "@headlessui/react";
 import { motion } from "framer-motion";
 import DatePicker from "react-datepicker";
-import "react-datepicker/dist/react-datepicker.css";
-import debounce from "lodash.debounce";
-import { fetchLocationSuggestions } from "../../api/Location";
 import Modal from "react-modal";
 import { FaCheckCircle, FaTimesCircle } from "react-icons/fa";
+import debounce from "lodash.debounce";
+import { fetchLocationSuggestions } from "../../api/Location";
+import "react-datepicker/dist/react-datepicker.css";
 
-// Set root for accessibility
 Modal.setAppElement("#root");
 
-// Category and subcategory data
 const categoryData = {
   Biodegradable: [
     "Food Waste",
@@ -47,24 +45,26 @@ const categoryData = {
 };
 
 const ReportWaste = () => {
-  // Load edit data if available
   useEffect(() => {
-  const editItem = JSON.parse(localStorage.getItem("editReportedWaste"));
-  if (editItem) {
-    setWasteName(editItem.wasteName);
-    setSelectedDate(new Date(editItem.dateReported));
-    setLocationQuery(editItem.locationQuery); 
-    setDescription(editItem.description);
-    setImagePreview(editItem.imageUrl);
-    setEditId(editItem.id);
-    localStorage.removeItem("editReportedWaste");
-  }
-}, []);
+    const editItem = JSON.parse(localStorage.getItem("editReportedWaste"));
+    const currentUser = JSON.parse(localStorage.getItem("ecoTrackCurrentUser"));
+    if (editItem && currentUser) {
+      setWasteName(editItem.wasteName);
+      setSelectedCategory(editItem.selectedCategory);
+      setSubCategory(editItem.subCategory);
+      setColorInput(editItem.colorInput);
+      setLocationQuery(editItem.locationQuery);
+      setSelectedDate(new Date(editItem.dateReported));
+      setDescription(editItem.description);
+      setImagePreview(editItem.imageUrl);
+      setEditId(editItem.id);
+      localStorage.removeItem("editReportedWaste");
+    }
+  }, []);
 
   const fileInputRef = useRef(null);
   const datePickerRef = useRef(null);
 
-  // Form states
   const [wasteName, setWasteName] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [subCategory, setSubCategory] = useState("");
@@ -74,34 +74,67 @@ const ReportWaste = () => {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [description, setDescription] = useState("");
   const [imagePreview, setImagePreview] = useState(null);
+  const [isUploading, setIsUploading] = useState(false); // Added this state
 
-  // Modal states
   const [modalIsOpen, setModalIsOpen] = useState(false);
-  const [modalStatus, setModalStatus] = useState(null); 
+  const [modalStatus, setModalStatus] = useState(null);
 
-  // Edit state
   const [editId, setEditId] = useState(null);
 
-  // Debounce location fetch
   const debouncedLocationFetch = useMemo(() =>
     debounce(async (query) => {
       const results = await fetchLocationSuggestions(query);
       setLocationResults(results);
     }, 300), []);
 
-  // Handlers
   const handleImageClick = () => fileInputRef.current?.click();
 
-  const handleImageChange = (e) => {
-  const file = e.target.files[0];
-  if (file) {
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setImagePreview(reader.result); 
-    };
-    reader.readAsDataURL(file);
-  }
-};
+   const uploadToCloudinary = async (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET);
+
+    try {
+      const response = await fetch(
+         `https://api.cloudinary.com/v1_1/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}/image/upload`,
+        {
+          method: 'POST',
+          body: formData,
+        }
+      );
+      const data = await response.json();
+      return data.secure_url;
+    } catch (error) {
+      console.error('Upload failed:', error);
+      return null;
+    }
+  };
+
+  const handleImageChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    
+    try {
+      // First show local preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+
+      // Upload to Cloudinary
+      const cloudinaryUrl = await uploadToCloudinary(file);
+      if (cloudinaryUrl) {
+        setImagePreview(cloudinaryUrl);
+      }
+    } catch (error) {
+      console.error("Upload error:", error);
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   const handleLocationChange = async (e) => {
     const query = e.target.value;
@@ -127,73 +160,83 @@ const ReportWaste = () => {
       subCategory &&
       colorInput &&
       locationQuery &&
-      selectedDate &&
       description &&
-      imagePreview;
+      imagePreview &&
+      selectedDate;
 
     if (!isValid) {
-    setModalStatus("error");
-  } else {
-    // Get current user email
-    const userEmail = localStorage.getItem("ecoTrackCurrentUserEmail");
-    const newEntry = {
-      id: editId || Date.now(),
-      userEmail,
-      wasteName,
-      dateReported: selectedDate.toISOString().split("T")[0],
-      location: locationQuery,
-      description,
-      imageUrl: imagePreview,
-    };
-
-    // Get existing data for this user
-    const userKey = `reportedWaste_${userEmail}`;
-    let existingData = JSON.parse(localStorage.getItem(userKey)) || [];
-
-    if (editId) {
-      existingData = existingData.map((item) =>
-        item.id === editId ? newEntry : item
-      );
+      setModalStatus("error");
     } else {
-      existingData.push(newEntry);
+      const currentUser = JSON.parse(localStorage.getItem("ecoTrackCurrentUser"));
+      const userEmail = currentUser?.email;
+      
+      const newEntry = {
+        id: editId || Date.now(),
+        userEmail,
+        wasteName,
+        selectedCategory,
+        subCategory,
+        colorInput,
+        locationQuery,
+        dateReported: selectedDate.toISOString().split("T")[0],
+        description,
+        imageUrl: imagePreview,
+      };
+
+      const userKey = `reportedWaste_${userEmail}`;
+      let existingData = JSON.parse(localStorage.getItem(userKey)) || [];
+
+      if (editId) {
+        existingData = existingData.map((item) =>
+          item.id === editId ? newEntry : item
+        );
+      } else {
+        existingData.push(newEntry);
+      }
+
+      localStorage.setItem(userKey, JSON.stringify(existingData));
+      setModalStatus("success");
+
+      // Reset form
+      setWasteName("");
+      setSelectedCategory("");
+      setSubCategory("");
+      setColorInput("");
+      setLocationQuery("");
+      setSelectedDate(new Date());
+      setDescription("");
+      setImagePreview(null);
+      setEditId(null);
     }
-
-    // Save to user-specific key
-    localStorage.setItem(userKey, JSON.stringify(existingData));
-    setModalStatus("success");
-
-    // Reset form
-    setWasteName("");
-    setSelectedCategory("");
-    setSubCategory("");
-    setColorInput("");
-    setLocationQuery("");
-    setSelectedDate(new Date());
-    setDescription("");
-    setImagePreview(null);
-  }
 
     setModalIsOpen(true);
     setTimeout(() => {
       setModalIsOpen(false);
       setModalStatus(null);
-      window.location.href = "/waste-timeline";
+      if (modalStatus === "success") {
+        window.location.href = "/waste-timeline";
+      }
     }, 3000);
   };
 
-  // Styles
   const inputStyle =
-    "w-full border border-gray-400 rounded px-3 py-2 text-sm text-black focus:border-green-600 focus:ring-1 focus:ring-green-600 focus:font-medium outline-none placeholder-black";
+    "w-full border border-gray-400 rounded px-3 py-2 text-sm text-black placeholder:text-black focus:border-green-600 focus:ring-1 focus:ring-green-600 focus:font-medium outline-none";
 
   const dropdownStyle =
     "relative w-full cursor-pointer rounded border border-gray-400 bg-white py-2 pl-3 pr-10 text-left text-sm text-black shadow-none focus:outline-none";
 
-  // Dropdown component
   const renderDropdown = (options, selected, setSelected, placeholder) => (
     <Listbox value={selected} onChange={setSelected}>
       <div className="relative">
-        <Listbox.Button className={`${dropdownStyle} focus:ring-1 focus:ring-green-600 focus:border-green-600 focus:font-medium`}>
-          <span className="truncate">{selected || placeholder}</span>
+        <Listbox.Button
+          className={
+            dropdownStyle +
+            " focus:ring-1 focus:ring-green-600 focus:border-green-600 focus:font-medium"
+          }
+        >
+          <span className="truncate text-black">
+            {selected || <span className="text-black">{placeholder}</span>}
+          </span>
           <span className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
             <ChevronDown className="h-4 w-4 text-gray-500" />
           </span>
@@ -217,7 +260,11 @@ const ReportWaste = () => {
               >
                 {({ selected }) => (
                   <>
-                    <span className={`block truncate ${selected ? "font-medium text-black" : ""}`}>
+                    <span
+                      className={`block truncate ${
+                        selected ? "font-medium text-black" : ""
+                      }`}
+                    >
                       {item}
                     </span>
                     {selected && (
@@ -259,8 +306,8 @@ const ReportWaste = () => {
             type="text"
             value={wasteName}
             onChange={(e) => setWasteName(e.target.value)}
-            className={inputStyle}
             placeholder="Enter waste name"
+            className={inputStyle}
           />
         </div>
 
@@ -329,7 +376,7 @@ const ReportWaste = () => {
               ref={datePickerRef}
               selected={selectedDate}
               onChange={(date) => setSelectedDate(date)}
-              className={inputStyle + " pr-10 w-full"}
+              className={`${inputStyle} pr-10 w-full`}
               dateFormat="yyyy-MM-dd"
               placeholderText="Select a date"
               dayClassName={(date) =>
@@ -348,9 +395,9 @@ const ReportWaste = () => {
         <div>
           <label className="block text-sm mb-1">Description:</label>
           <textarea
+            placeholder="Enter description"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder="Enter description"
             rows="3"
             className={inputStyle}
           />
@@ -388,7 +435,7 @@ const ReportWaste = () => {
             type="submit"
             className="px-4 py-2 bg-green-600 text-white rounded hover:bg-yellow-400 hover:text-black transition-colors duration-300"
           >
-            Report
+            {editId ? "Update Report" : "Report Waste"}
           </button>
         </div>
       </motion.form>
@@ -397,25 +444,26 @@ const ReportWaste = () => {
       <Modal
         isOpen={modalIsOpen}
         onRequestClose={() => setModalIsOpen(false)}
-        contentLabel="Submission Modal"
+        contentLabel="Waste Report Status"
         className="bg-white w-80 max-w-md mx-auto p-6 rounded-lg shadow-lg outline-none flex flex-col items-center text-center"
         overlayClassName="fixed inset-0 bg-black bg-opacity-30 flex justify-center items-center z-50"
       >
-        <div className="text-5xl mb-4">
+        <div className="text-6xl mb-4">
           {modalStatus === "success" ? (
             <FaCheckCircle className="text-green-600" />
           ) : (
             <FaTimesCircle className="text-red-600" />
           )}
         </div>
-
         <h2
           className={`text-lg font-semibold ${
             modalStatus === "success" ? "text-green-600" : "text-red-600"
           }`}
         >
           {modalStatus === "success"
-            ? "Waste reported successfully!"
+            ? editId
+              ? "Report updated successfully!"
+              : "Waste reported successfully!"
             : "Please fill in all required fields."}
         </h2>
       </Modal>
