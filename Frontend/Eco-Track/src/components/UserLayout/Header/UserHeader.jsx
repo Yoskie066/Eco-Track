@@ -4,11 +4,11 @@ import { useNavigate } from "react-router-dom";
 import {
   Menu,
   X,
-  LogOut,
   LayoutDashboard,
   Recycle,
-  AlertCircle,
-  Trash2,
+  FileText,
+  History,
+  LogOut,
 } from "lucide-react";
 
 export default function UserHeader() {
@@ -57,11 +57,11 @@ export default function UserHeader() {
           Collect Waste
         </Link>
         <Link to="/report-waste" className="flex items-center gap-1 hover:text-yellow-400 transition duration-200">
-          <AlertCircle className="w-4 h-4" />
+          <FileText className="w-4 h-4" />
           Report Waste
         </Link>
         <Link to="/waste-timeline" className="flex items-center gap-1 hover:text-yellow-400 transition duration-200">
-          <Trash2 className="w-4 h-4" />
+          <History className="w-4 h-4" />
           Waste Timeline
         </Link>
         <button 
@@ -122,7 +122,7 @@ export default function UserHeader() {
             onClick={() => setIsOpen(false)} 
             className="py-3 px-4 hover:bg-green-700 rounded flex items-center gap-3"
           >
-            <AlertCircle className="w-5 h-5" />
+            <FileText className="w-5 h-5" />
             Report Waste
           </Link>
           <Link 
@@ -130,7 +130,7 @@ export default function UserHeader() {
             onClick={() => setIsOpen(false)} 
             className="py-3 px-4 hover:bg-green-700 rounded flex items-center gap-3"
           >
-            <Trash2 className="w-5 h-5" />
+            <History className="w-5 h-5" />
             Waste Timeline
           </Link>
           <button 

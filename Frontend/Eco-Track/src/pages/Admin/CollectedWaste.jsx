@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaSearch, FaArrowLeft, FaArrowRight } from 'react-icons/fa';
-import { Cloudinary } from '@cloudinary/url-gen';
 
 const CollectedWaste = () => {
   const [searchTerm, setSearchTerm] = useState('');
