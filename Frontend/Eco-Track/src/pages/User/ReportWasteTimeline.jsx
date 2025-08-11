@@ -77,7 +77,7 @@ const ReportedWasteTimeline = () => {
             </div>
 
             <p className="text-sm mt-1 text-gray-600">
-              <span className="font-medium">{item.location}</span>
+              <span className="font-medium">{item.locationQuery}</span>
             </p>
             <p className="mt-2">{item.description}</p>
 
