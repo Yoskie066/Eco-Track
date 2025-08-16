@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 import initDb from './database/initDb.js';
 import cookieParser from 'cookie-parser';
 import UserRoutes from './routes/UserRoutes/UserRoutes.js'; 
+import AdminRoutes from './routes/AdminRoutes/AdminRoutes.js';
 
 // Load environment variables
 dotenv.config();
@@ -22,6 +23,7 @@ const startServer = async () => {
     
     // Use UserRoutes for all user-related endpoints
     app.use('/api/users', UserRoutes);
+    app.use('/api/admins', AdminRoutes);
 
     // Sample route
     app.get('/', (req, res) => {

@@ -1,33 +1,24 @@
 import pool from '../../config/db.js';
 
 class DashboardModel {
-  static async getUserWasteSummary(userEmail, year) {
-    try {
-      const collectedQuery = `
-        SELECT EXTRACT(MONTH FROM date_collected) AS month, COUNT(*) AS count
-        FROM collected_waste
-        WHERE email = $1 AND EXTRACT(YEAR FROM date_collected) = $2
-        GROUP BY month ORDER BY month;
-      `;
+  static async getCollectedWaste() {
+    const query = `
+      SELECT useremail, wastename, yearcollected, total_count
+      FROM dashboard_collected_waste
+      ORDER BY yearcollected DESC, total_count DESC;
+    `;
+    const result = await pool.query(query);
+    return result.rows;
+  }
 
-      const reportedQuery = `
-        SELECT EXTRACT(MONTH FROM date_reported) AS month, COUNT(*) AS count
-        FROM reported_waste
-        WHERE email = $1 AND EXTRACT(YEAR FROM date_reported) = $2
-        GROUP BY month ORDER BY month;
-      `;
-
-      const collectedResult = await pool.query(collectedQuery, [userEmail, year]);
-      const reportedResult = await pool.query(reportedQuery, [userEmail, year]);
-
-      const collected = collectedResult?.rows ?? [];
-      const reported = reportedResult?.rows ?? [];
-
-      return { collected, reported };
-    } catch (error) {
-      console.error("Error in getUserWasteSummary:", error);
-      return { error: 'Database error', details: error.message };
-    }
+  static async getReportedWaste() {
+    const query = `
+      SELECT useremail, wastename, year_reported, total_count
+      FROM dashboard_reported_waste
+      ORDER BY year_reported DESC, total_count DESC;
+    `;
+    const result = await pool.query(query);
+    return result.rows;
   }
 }
 
