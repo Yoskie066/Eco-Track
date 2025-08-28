@@ -32,6 +32,7 @@ const UserLogin = () => {
       // Store user email in localStorage
       localStorage.setItem("ecoTrackCurrentUserEmail", user.email);
       localStorage.setItem("ecoTrackCurrentUser", JSON.stringify(user));
+
     } else {
       setModalStatus("error");
     }

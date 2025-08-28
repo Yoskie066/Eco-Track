@@ -15,12 +15,13 @@ class ReportWasteTimelineController {
   // Endpoint to get timeline data for a specific user
   static async getUserReportWasteTimeline(req, res) {
     try {
-       const userEmail = req.user?.email; ;
+      const userEmail = req.user?.email;
       if (!userEmail) {
-        return res.status(400).json({ error: "Missing userEmail query parameter" });
+        return res.status(400).json({ error: "Missing userEmail from authenticated user" });
       }
+
       const timeline = await ReportWasteTimelineModel.getUserTimeline(userEmail);
-      res.status(200).json(timeline);
+      res.status(200).json({ success: true, data: timeline });
     } catch (error) {
       console.error(error);
       res.status(500).json({ error: "Failed to fetch report waste timeline." });
@@ -29,6 +30,3 @@ class ReportWasteTimelineController {
 }
 
 export default ReportWasteTimelineController;
-
-
-

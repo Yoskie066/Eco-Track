@@ -3,72 +3,80 @@ import cloudinary from '../../config/cloudinary.js';
 import fs from 'fs';
 
 class CollectWasteController {
-  // Controller method for adding a collected waste record
+  // Add collected waste
   static async addWaste(req, res) {
     try {
-      // Spread all request body data into wasteData
       const wasteData = { ...req.body };
-      
-       // Attach the logged-in user's email (from authentication middleware)
-      wasteData.userEmail = req.user.email;
+      wasteData.userEmail = req.user?.email || "testuser@example.com";
 
-      // If there is an uploaded file, upload it to Cloudinary
       if (req.file) {
-        const uploadResult = await cloudinary.uploader.upload(req.file.path, {
-          folder: 'eco_track_uploads',
-        });
-
+        const uploadResult = await cloudinary.uploader.upload(req.file.path, { folder: 'eco_track_uploads' });
         wasteData.photoUrl = uploadResult.secure_url;
-
         fs.unlinkSync(req.file.path);
       }
 
-      // Call the model function to insert the data into the database
       const result = await CollectWasteModel.addWaste(wasteData);
 
-      // Send success response to client
       res.status(201).json({
         success: true,
         message: 'Waste collected successfully',
-        id: result.id,
+        id: result.id
       });
     } catch (error) {
-       // Log and send error response
       console.error("Error inserting collect waste:", error.message);
-      res.status(500).json({
-        success: false,
-        message: "Failed to collect waste",
-        error: error.message
-      });
+      res.status(500).json({ success: false, message: "Failed to collect waste", error: error.message });
     }
   }
 
-  static async getUserWaste(req, res) {
-    // Controller method for retrieving waste records of the logged-in user
+  // Update collected waste
+  static async updateWaste(req, res) {
     try {
-      // Get the logged-in user's email
-      const email = req.user.email;
+      const { id } = req.params;
+      const wasteData = { ...req.body };
 
-      // Fetch waste records from the database based on the user's email
-      const wastes = await CollectWasteModel.getUserWaste(email);
-
-      if (wastes.length === 0) {
-        return res.status(404).json({ success: false, message: 'No collected waste found' });
+      if (req.file) {
+        const uploadResult = await cloudinary.uploader.upload(req.file.path, { folder: 'eco_track_uploads' });
+        wasteData.photoUrl = uploadResult.secure_url; // FIXED casing
+        fs.unlinkSync(req.file.path);
       }
 
-      // Remove userEmail field from each record before sending response
-      const filteredWastes = wastes.map(({ useremail, ...rest }) => rest);
+      const updated = await CollectWasteModel.updateWaste(id, wasteData);
+      if (!updated) return res.status(404).json({ success: false, message: "Waste not found" });
 
-      // Send response with waste records
-      res.json({ success: true, data: filteredWastes });
+      res.json({ success: true, message: "Waste updated successfully", data: updated });
     } catch (error) {
-      // Log and send error response
+      console.error("Error updating waste:", error.message);
+      res.status(500).json({ success: false, message: "Failed to update waste", error: error.message });
+    }
+  }
+
+  // Delete collected waste
+  static async deleteWaste(req, res) {
+    try {
+      const { id } = req.params;
+      const deleted = await CollectWasteModel.deleteWaste(id);
+      if (!deleted) return res.status(404).json({ success: false, message: "Waste not found" });
+
+      res.json({ success: true, message: "Waste deleted successfully", data: deleted });
+    } catch (error) {
+      console.error("Error deleting waste:", error.message);
+      res.status(500).json({ success: false, message: "Failed to delete waste", error: error.message });
+    }
+  }
+
+  // Get user collected waste
+  static async getUserWaste(req, res) {
+    try {
+      const email = req.user.email;
+      const wastes = await CollectWasteModel.getUserWaste(email);
+
+      // remove userEmail field if you don’t want to expose it
+      const filtered = wastes.map(({ useremail: _, ...rest }) => rest);
+
+      res.json({ success: true, data: filtered });
+    } catch (error) {
       console.error('Error fetching collected waste:', error.message);
-      res.status(500).json({
-        success: false,
-        message: 'Failed to fetch collected waste',
-        error: error.message
-      });
+      res.status(500).json({ success: false, message: 'Failed to fetch collected waste', error: error.message });
     }
   }
 }

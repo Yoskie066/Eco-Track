@@ -12,11 +12,6 @@ const UserManagement = () => {
   const [isLoaded, setIsLoaded] = useState(false);
   const itemsPerPage = 10;
 
-  // Function to generate random 10-digit number
-  const generateRandomId = () => {
-    return Math.floor(1000000000 + Math.random() * 9000000000).toString();
-  };
-
   useEffect(() => {
   // Load data from localStorage
   const loadedUsers = JSON.parse(localStorage.getItem('ecoTrackUsers')) || [];

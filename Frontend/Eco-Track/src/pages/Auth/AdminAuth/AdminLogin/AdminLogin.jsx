@@ -32,6 +32,7 @@ const AdminLogin = () => {
       // Store admin email in localStorage
       localStorage.setItem("ecoTrackCurrentAdminEmail", admin.email);
       localStorage.setItem("ecoTrackCurrentAdmin", JSON.stringify(admin));
+      
     } else {
       setModalStatus("error");
     }
